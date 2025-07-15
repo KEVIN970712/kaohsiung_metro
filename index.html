@@ -12,9 +12,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-
-    <!-- 引入 Lucide Icons -->
-    <script src="https://unpkg.com/lucide-react@0.292.0/dist/lucide-react.js"></script>
     
     <style>
         /* 基本樣式設定 */
@@ -26,16 +23,6 @@
         /* 卡片漸層背景 */
         .card-gradient {
             background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        }
-
-        /* 按鈕漸層與動效 */
-        .btn-gradient {
-            background-image: linear-gradient(to right, #3b82f6 0%, #2563eb 51%, #3b82f6 100%);
-            background-size: 200% auto;
-            transition: 0.5s;
-        }
-        .btn-gradient:hover {
-            background-position: right center; /* 改變漸層方向以產生動效 */
         }
 
         /* 自定義下拉選單箭頭 */
@@ -212,74 +199,126 @@
                 `;
             };
 
-            // 渲染列車資訊卡片
-            const renderResult = (data) => {
-                resultsDisplay.innerHTML = ''; // 清空舊內容
+            const updateTrainCardTime = (card, value) => {
+                const timeElement = card.querySelector('.train-time');
+                if (!timeElement) return;
+
+                const [hours, minutes] = value.split('_');
+                const totalMinutes = parseInt(minutes);
+                let timeDisplay, timeClass;
+
+                if (totalMinutes <= 1) {
+                    timeDisplay = '進站中';
+                    timeClass = 'text-lg font-bold text-red-500 animate-pulse train-time';
+                } else {
+                    timeDisplay = `${minutes} 分`;
+                    timeClass = 'text-lg font-bold text-blue-600 train-time';
+                }
+
+                timeElement.textContent = timeDisplay;
+                timeElement.className = timeClass; // 重設 class 以確保樣式正確
+            };
+
+            const createTrainCard = (key, value) => {
+                const [fromStationCode, toStationCode] = key.split('_');
+                let toName, lineName;
+                // 遍歷所有路線找到終點站名稱和所屬路線
+                for (const line in stations) {
+                    if (stations[line][toStationCode]) {
+                        toName = stations[line][toStationCode];
+                        lineName = line;
+                        break; 
+                    }
+                }
+                toName = toName || toStationCode;
+
+                // 決定路線顏色條的顏色
+                let lineClass = lineName === '紅線' ? 'bg-red-500' : (lineName === '橘線' ? 'bg-orange-500' : 'bg-gray-400');
                 
-                // 將物件轉為陣列並排序 (依分鐘數)
+                const card = document.createElement('div');
+                card.dataset.trainId = key; // **核心：設定唯一識別碼**
+                card.className = 'bg-white p-4 rounded-lg shadow-sm mb-3 flex items-center gap-4 transition-all transform hover:scale-[1.02]';
+                card.innerHTML = `
+                    <div class="flex-shrink-0 w-2 h-16 rounded-full ${lineClass}"></div>
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-baseline">
+                            <p class="text-sm text-gray-500">開往</p>
+                            <!-- **核心：給時間元素一個 class 以便選取** -->
+                            <p class="train-time"></p>
+                        </div>
+                        <p class="text-xl font-semibold text-gray-800">${toName}</p>
+                        <p class="text-xs text-gray-400">${toStationCode}</p>
+                    </div>
+                `;
+
+                // 創建後立即設定初始時間
+                updateTrainCardTime(card, value);
+                return card;
+            };
+
+            // =================================================================
+            // == MODIFIED: 優化後的渲染函式 ==
+            // =================================================================
+            const renderResult = (data) => {
                 const sortedData = Object.entries(data).sort(([, a], [, b]) => {
                     const timeA = parseInt(a.split('_')[1]);
                     const timeB = parseInt(b.split('_')[1]);
                     return timeA - timeB;
                 });
 
+                // 情況一：沒有任何列車資料
                 if (sortedData.length === 0) {
-                     const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+                    resultsDisplay.innerHTML = ''; // 清空舊內容
+                    const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
                     showMessage(icon, `目前無列車資訊`, `於 ${stationSelect.options[stationSelect.selectedIndex].text} 站`);
                     return;
                 }
 
-                const fragment = document.createDocumentFragment();
-                for (const [key, value] of sortedData) {
-                    const [fromStationCode, toStationCode] = key.split('_');
-                    
-                    // 尋找站點名稱
-                    let fromName, toName, lineName;
-                    for (const line in stations) {
-                        if (stations[line][fromStationCode]) fromName = stations[line][fromStationCode];
-                        if (stations[line][toStationCode]) {
-                            toName = stations[line][toStationCode];
-                            lineName = line;
-                        }
-                    }
-                    fromName = fromName || fromStationCode;
-                    toName = toName || toStationCode;
-
-                    const [hours, minutes] = value.split('_');
-                    let timeDisplay, timeClass;
-                    const totalMinutes = parseInt(minutes);
-
-                    // 調整顏色判斷邏輯：僅在進站中顯示為紅色，其餘皆為灰色
-                    if (totalMinutes <= 1) {
-                        timeDisplay = '進站中';
-                        timeClass = 'text-red-500 font-bold animate-pulse';
-                    } else {
-                        timeDisplay = `${minutes} 分`;
-                        timeClass = 'text-gray-700'; // 其他時間皆為灰色
-                    }
-
-                    // 決定路線顏色
-                    let lineClass = 'bg-gray-400';
-                    if (lineName === '紅線') lineClass = 'bg-red-500';
-                    else if (lineName === '橘線') lineClass = 'bg-orange-500';
-                    
-                    const card = document.createElement('div');
-                    card.className = 'bg-white p-4 rounded-lg shadow-sm mb-3 flex items-center gap-4 transition-transform transform hover:scale-[1.02]';
-                    card.innerHTML = `
-                        <div class="flex-shrink-0 w-2 h-16 rounded-full ${lineClass}"></div>
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-baseline">
-                                <p class="text-sm text-gray-500">開往</p>
-                                <p class="text-lg font-bold ${timeClass}">${timeDisplay}</p>
-                            </div>
-                            <p class="text-xl font-semibold text-gray-800">${toName}</p>
-                            <p class="text-xs text-gray-400">${toStationCode}</p>
-                        </div>
-                    `;
-                    fragment.appendChild(card);
+                // 如果之前是顯示訊息狀態，先清空
+                if (resultsDisplay.querySelector('.flex-col')) {
+                    resultsDisplay.innerHTML = '';
                 }
-                resultsDisplay.appendChild(fragment);
+
+                const processedTrainIds = new Set();
+                const newCardsFragment = document.createDocumentFragment();
+
+                // 步驟 1: 更新現有卡片，並將新卡片暫存於 fragment
+                for (const [key, value] of sortedData) {
+                    processedTrainIds.add(key);
+                    let card = resultsDisplay.querySelector(`[data-train-id="${key}"]`);
+
+                    if (card) {
+                        // 卡片已存在 -> 只更新時間
+                        updateTrainCardTime(card, value);
+                    } else {
+                        // 卡片不存在 -> 創建新卡片並加入 fragment
+                        const newCard = createTrainCard(key, value);
+                        newCardsFragment.appendChild(newCard);
+                    }
+                }
+                
+                // 一次性將所有新卡片加入 DOM
+                resultsDisplay.appendChild(newCardsFragment);
+
+                // 步驟 2: 移除已離站的舊卡片
+                const existingCards = resultsDisplay.querySelectorAll('[data-train-id]');
+                existingCards.forEach(card => {
+                    const trainId = card.dataset.trainId;
+                    if (!processedTrainIds.has(trainId)) {
+                        card.remove();
+                    }
+                });
+
+                // 步驟 3: 根據最新時間重新排序所有卡片
+                sortedData.forEach(([key, _]) => {
+                    const cardToMove = resultsDisplay.querySelector(`[data-train-id="${key}"]`);
+                    if (cardToMove) {
+                        // 將元素附加到父節點的末尾，即可實現排序
+                        resultsDisplay.appendChild(cardToMove);
+                    }
+                });
             };
+
 
             // 更新倒數計時器
             const updateCountdownDisplay = () => {
@@ -321,7 +360,6 @@
             // 獲取捷運資料
             const fetchMRTData = async (showLoadingIndicator = true) => {
                 const selectedStationCode = stationSelect.value;
-                // 如果沒有選擇車站，則不發送請求
                 if (!selectedStationCode) {
                     showMessage(
                         `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><path d="M8 12s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>`,
@@ -331,7 +369,6 @@
                     return;
                 }
 
-                // 使用一個開源的 CORS 代理來繞過瀏覽器限制
                 const proxyUrl = `https://krtc.potatosserver.workers.dev/?station=${selectedStationCode}`;
 
                 manualUpdateButton.disabled = true;
@@ -347,8 +384,8 @@
                         throw new Error(errorData?.error || `HTTP 錯誤: ${response.status}`);
                     }
                     const data = await response.json();
-                    renderResult(data);
-                    updateLastUpdatedTime(); // 成功獲取資料後更新時間
+                    renderResult(data); // **呼叫優化後的渲染函式**
+                    updateLastUpdatedTime();
 
                 } catch (error) {
                     console.error('獲取捷運資料失敗:', error);
@@ -357,7 +394,6 @@
                 } finally {
                     manualUpdateButton.disabled = false;
                     updateIcon.classList.remove('animate-spin');
-                    // 重置倒數計時器
                     startAutoUpdate();
                 }
             };
@@ -377,12 +413,12 @@
                 fetchMRTData(true);
             });
 
-            manualUpdateButton.addEventListener('click', () => fetchMRTData(true));
+            manualUpdateButton.addEventListener('click', () => fetchMRTData(false)); // 手動更新改為 false，體驗更流暢
             stationSelect.addEventListener('change', () => fetchMRTData(true));
 
             // 初始載入
-            updateLineButtonStyles(); // 設定初始按鈕樣式
-            populateStationSelect(); // 根據預設路線填充車站
+            updateLineButtonStyles();
+            populateStationSelect();
             fetchMRTData(true);
         });
     </script>
