@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高雄捷運即時動態查詢</title>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 Google Fonts (Noto Sans TC) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide-react@0.292.0/dist/lucide-react.js"></script>
+    
+    <style>
+        /* 基本樣式設定 */
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f4f8; /* 使用更柔和的背景色 */
+        }
+
+        /* 卡片漸層背景 */
+        .card-gradient {
+            background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        /* 按鈕漸層與動效 */
+        .btn-gradient {
+            background-image: linear-gradient(to right, #3b82f6 0%, #2563eb 51%, #3b82f6 100%);
+            background-size: 200% auto;
+            transition: 0.5s;
+        }
+        .btn-gradient:hover {
+            background-position: right center; /* 改變漸層方向以產生動效 */
+        }
+
+        /* 自定義下拉選單箭頭 */
+        .custom-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* 讀取中動畫 */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- 主容器 -->
+    <div class="w-full max-w-lg mx-auto">
+        <!-- 標題 -->
+        <div class="flex items-center justify-center gap-3 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">高雄捷運查詢</h1>
+        </div>
+
+        <!-- 卡片式主體 -->
+        <div class="card-gradient p-6 sm:p-8 rounded-2xl shadow-lg w-full">
+            
+            <!-- 路線選擇按鈕 -->
+            <div class="flex justify-center gap-4 mb-6">
+                <button id="red-line-button" class="px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    紅線 Red Line
+                </button>
+                <button id="orange-line-button" class="px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                    橘線 Orange Line
+                </button>
+            </div>
+
+            <!-- 站點選擇 -->
+            <div class="mb-6">
+                <label for="station-select" class="block text-gray-600 text-sm font-medium mb-2">選擇車站</label>
+                <div class="relative">
+                    <select id="station-select" class="custom-select block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white transition duration-200">
+                        <!-- 車站選項將由 JavaScript 動態填充 -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- 查詢結果顯示區 -->
+            <div class="mt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold text-gray-700">列車動態</h2>
+                    <!-- 更新按鈕與倒數計時 -->
+                    <button id="manual-update-button" class="flex items-center gap-2 text-sm text-blue-600 font-medium hover:text-blue-800 transition-colors disabled:opacity-50 disabled:cursor-wait">
+                        <svg id="update-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                        <span id="countdown-text"></span>
+                    </button>
+                </div>
+                
+                <!-- 結果容器 -->
+                <div id="results-display" class="bg-gray-50 p-4 rounded-lg min-h-[240px] max-h-96 overflow-y-auto relative shadow-inner">
+                    <!-- 初始提示或讀取動畫會顯示在這裡 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 頁腳資訊 -->
+        <p class="text-center text-gray-500 text-xs mt-6">
+            <span id="last-updated-time"></span>
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM 元素
+            const redLineButton = document.getElementById('red-line-button');
+            const orangeLineButton = document.getElementById('orange-line-button');
+            const stationSelect = document.getElementById('station-select');
+            const manualUpdateButton = document.getElementById('manual-update-button');
+            const countdownText = document.getElementById('countdown-text');
+            const resultsDisplay = document.getElementById('results-display');
+            const updateIcon = document.getElementById('update-icon');
+            const lastUpdatedTimeSpan = document.getElementById('last-updated-time');
+
+            // 計時器相關變數
+            let autoUpdateInterval;
+            let currentCountdown = 30;
+            const UPDATE_INTERVAL = 30; // 30秒更新一次
+
+            // 當前選擇的路線
+            let selectedLine = "紅線"; // 預設為紅線
+
+            // 高雄捷運站點資料 (已移除輕軌)
+            const stations = {
+                "紅線": {
+                    "R3": "小港", "R4": "高雄國際機場", "R4A": "草衙", "R5": "前鎮高中", "R6": "凱旋",
+                    "R7": "獅甲", "R8": "三多商圈", "R9": "中央公園", "R10": "美麗島", "R11": "高雄車站",
+                    "R12": "後驛", "R13": "凹子底", "R14": "巨蛋", "R15": "生態園區", "R16": "左營/高鐵",
+                    "R17": "世運", "R19": "楠梓加工區", "R20": "後勁", "R21": "都會公園", "R22": "青埔",
+                    "R22A": "橋頭糖廠", "R23": "橋頭火車站", "R24": "岡山高醫", "RK1": "岡山車站"
+                },
+                "橘線": {
+                    "O1": "西子灣", "O2": "鹽埕埔", "O4": "前金", "O5": "美麗島", "O6": "信義國小",
+                    "O7": "文化中心", "O8": "五塊厝", "O9": "技擊館", "O10": "衛武營", "O11": "鳳山西站(高雄市議會)",
+                    "O12": "鳳山", "O13": "大東", "O14": "鳳山國中", "OT1": "大寮"
+                }
+            };
+
+            // 更新路線按鈕的樣式
+            const updateLineButtonStyles = () => {
+                if (selectedLine === "紅線") {
+                    redLineButton.classList.add('bg-red-500', 'text-white', 'shadow-md');
+                    redLineButton.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-red-100');
+                    orangeLineButton.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-orange-100');
+                    orangeLineButton.classList.remove('bg-orange-500', 'text-white', 'shadow-md');
+                } else {
+                    orangeLineButton.classList.add('bg-orange-500', 'text-white', 'shadow-md');
+                    orangeLineButton.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-orange-100');
+                    redLineButton.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-red-100');
+                    redLineButton.classList.remove('bg-red-500', 'text-white', 'shadow-md');
+                }
+            };
+
+            // 填充站點選擇器 (根據選擇的路線)
+            const populateStationSelect = () => {
+                stationSelect.innerHTML = ''; // 清空舊內容
+                if (selectedLine && stations[selectedLine]) {
+                    for (const code in stations[selectedLine]) {
+                        const option = document.createElement('option');
+                        option.value = code;
+                        option.textContent = `${code} ${stations[selectedLine][code]}`;
+                        stationSelect.appendChild(option);
+                    }
+                }
+            };
+
+            // 顯示讀取中狀態
+            const showLoading = () => {
+                resultsDisplay.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                        <div class="loader mb-4"></div>
+                        <p>資料載入中，請稍候...</p>
+                    </div>
+                `;
+            };
+
+            // 顯示提示訊息 (例如無資料或錯誤)
+            const showMessage = (icon, title, text) => {
+                resultsDisplay.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                        <div class="w-16 h-16 mb-4">${icon}</div>
+                        <p class="font-semibold text-gray-700">${title}</p>
+                        <p class="text-sm">${text}</p>
+                    </div>
+                `;
+            };
+
+            // 渲染列車資訊卡片
+            const renderResult = (data) => {
+                resultsDisplay.innerHTML = ''; // 清空舊內容
+                
+                // 將物件轉為陣列並排序 (依分鐘數)
+                const sortedData = Object.entries(data).sort(([, a], [, b]) => {
+                    const timeA = parseInt(a.split('_')[1]);
+                    const timeB = parseInt(b.split('_')[1]);
+                    return timeA - timeB;
+                });
+
+                if (sortedData.length === 0) {
+                     const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+                    showMessage(icon, `目前無列車資訊`, `於 ${stationSelect.options[stationSelect.selectedIndex].text} 站`);
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                for (const [key, value] of sortedData) {
+                    const [fromStationCode, toStationCode] = key.split('_');
+                    
+                    // 尋找站點名稱
+                    let fromName, toName, lineName;
+                    for (const line in stations) {
+                        if (stations[line][fromStationCode]) fromName = stations[line][fromStationCode];
+                        if (stations[line][toStationCode]) {
+                            toName = stations[line][toStationCode];
+                            lineName = line;
+                        }
+                    }
+                    fromName = fromName || fromStationCode;
+                    toName = toName || toStationCode;
+
+                    const [hours, minutes] = value.split('_');
+                    let timeDisplay, timeClass;
+                    const totalMinutes = parseInt(minutes);
+
+                    // 調整顏色判斷邏輯：僅在進站中顯示為紅色，其餘皆為灰色
+                    if (totalMinutes <= 1) {
+                        timeDisplay = '進站中';
+                        timeClass = 'text-red-500 font-bold animate-pulse';
+                    } else {
+                        timeDisplay = `${minutes} 分`;
+                        timeClass = 'text-gray-700'; // 其他時間皆為灰色
+                    }
+
+                    // 決定路線顏色
+                    let lineClass = 'bg-gray-400';
+                    if (lineName === '紅線') lineClass = 'bg-red-500';
+                    else if (lineName === '橘線') lineClass = 'bg-orange-500';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-4 rounded-lg shadow-sm mb-3 flex items-center gap-4 transition-transform transform hover:scale-[1.02]';
+                    card.innerHTML = `
+                        <div class="flex-shrink-0 w-2 h-16 rounded-full ${lineClass}"></div>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-baseline">
+                                <p class="text-sm text-gray-500">開往</p>
+                                <p class="text-lg font-bold ${timeClass}">${timeDisplay}</p>
+                            </div>
+                            <p class="text-xl font-semibold text-gray-800">${toName}</p>
+                            <p class="text-xs text-gray-400">${toStationCode}</p>
+                        </div>
+                    `;
+                    fragment.appendChild(card);
+                }
+                resultsDisplay.appendChild(fragment);
+            };
+
+            // 更新倒數計時器
+            const updateCountdownDisplay = () => {
+                if (currentCountdown <= 0) {
+                    countdownText.textContent = `更新中...`;
+                } else {
+                    countdownText.textContent = `${currentCountdown}s 後更新`;
+                }
+            };
+
+            // 更新最後更新時間
+            const updateLastUpdatedTime = () => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                lastUpdatedTimeSpan.textContent = `最後更新時間: ${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+            };
+
+            // 啟動/重置自動更新計時器
+            const startAutoUpdate = () => {
+                clearInterval(autoUpdateInterval);
+                currentCountdown = UPDATE_INTERVAL;
+                updateCountdownDisplay();
+
+                autoUpdateInterval = setInterval(() => {
+                    currentCountdown--;
+                    updateCountdownDisplay();
+                    if (currentCountdown <= 0) {
+                        fetchMRTData(false); // 自動更新時，不顯示 loading
+                        currentCountdown = UPDATE_INTERVAL;
+                    }
+                }, 1000);
+            };
+
+            // 獲取捷運資料
+            const fetchMRTData = async (showLoadingIndicator = true) => {
+                const selectedStationCode = stationSelect.value;
+                // 如果沒有選擇車站，則不發送請求
+                if (!selectedStationCode) {
+                    showMessage(
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><path d="M8 12s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>`,
+                        '請選擇車站',
+                        '請先從上方選單選擇一條路線和一個車站。'
+                    );
+                    return;
+                }
+
+                // 使用一個開源的 CORS 代理來繞過瀏覽器限制
+                const proxyUrl = `https://krtc.potatosserver.workers.dev/?station=${selectedStationCode}`;
+
+                manualUpdateButton.disabled = true;
+                updateIcon.classList.add('animate-spin');
+                if (showLoadingIndicator) {
+                    showLoading();
+                }
+
+                try {
+                    const response = await fetch(proxyUrl, { cache: "no-store" });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => null);
+                        throw new Error(errorData?.error || `HTTP 錯誤: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    renderResult(data);
+                    updateLastUpdatedTime(); // 成功獲取資料後更新時間
+
+                } catch (error) {
+                    console.error('獲取捷運資料失敗:', error);
+                    const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+                    showMessage(icon, '資料獲取失敗', '請檢查網路連線或稍後再試。');
+                } finally {
+                    manualUpdateButton.disabled = false;
+                    updateIcon.classList.remove('animate-spin');
+                    // 重置倒數計時器
+                    startAutoUpdate();
+                }
+            };
+
+            // 事件監聽
+            redLineButton.addEventListener('click', () => {
+                selectedLine = "紅線";
+                updateLineButtonStyles();
+                populateStationSelect();
+                fetchMRTData(true);
+            });
+
+            orangeLineButton.addEventListener('click', () => {
+                selectedLine = "橘線";
+                updateLineButtonStyles();
+                populateStationSelect();
+                fetchMRTData(true);
+            });
+
+            manualUpdateButton.addEventListener('click', () => fetchMRTData(true));
+            stationSelect.addEventListener('change', () => fetchMRTData(true));
+
+            // 初始載入
+            updateLineButtonStyles(); // 設定初始按鈕樣式
+            populateStationSelect(); // 根據預設路線填充車站
+            fetchMRTData(true);
+        });
+    </script>
+</body>
+</html>
