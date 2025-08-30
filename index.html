@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高雄捷運即時動態查詢</title>
+    <title>高雄捷運即時動態查詢 | 紅線、橘線時刻表與列車動態</title>
+    <meta name="description" content="提供高雄捷運紅線與橘線的即時列車動態查詢服務，包含各站點列車進站時間，讓您輕鬆掌握最新捷運資訊。">
+    <meta name="keywords" content="高雄捷運, 高捷, 高雄, 捷運, 捷運時刻表, 捷運動態, 紅線, 橘線, Kaohsiung MRT, MRT">
     
+    <!-- Open Graph 標籤，用於社群媒體分享 -->
+    <meta property="og:title" content="高雄捷運即時動態查詢">
+    <meta property="og:description" content="輕鬆掌握高雄捷運紅線與橘線的即時列車動態，讓您的旅程更順暢。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://kevin970712.github.io/kaohsiung_metro/">
+    <meta property="og:image" content="https://kevin970712.github.io/kaohsiung_metro/image_a90add.png">
+
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -57,6 +66,23 @@
             }
         }
     </style>
+    <!-- 結構化資料 (Structured Data) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "高雄捷運即時動態查詢",
+      "url": "https://kevin970712.github.io/kaohsiung_metro/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://kevin970712.github.io/kaohsiung_metro/?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
 
