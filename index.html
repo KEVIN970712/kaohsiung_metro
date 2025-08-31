@@ -26,15 +26,75 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     
     <style>
+        /* CSS 變數定義 - 淺色模式 */
+        :root {
+            --bg-primary: #f0f4f8;
+            --bg-card: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border-color: #d1d5db;
+            --bg-white: #ffffff;
+            --bg-gray-50: #f9fafb;
+            --bg-gray-100: #f3f4f6;
+            --bg-gray-200: #e5e7eb;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 深色模式變數 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #111827;
+                --bg-card: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+                --text-primary: #f9fafb;
+                --text-secondary: #d1d5db;
+                --text-muted: #9ca3af;
+                --border-color: #4b5563;
+                --bg-white: #1f2937;
+                --bg-gray-50: #374151;
+                --bg-gray-100: #4b5563;
+                --bg-gray-200: #6b7280;
+                --shadow-color: rgba(0, 0, 0, 0.3);
+            }
+        }
+
         /* 基本樣式設定 */
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f0f4f8; /* 使用更柔和的背景色 */
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* 卡片漸層背景 */
         .card-gradient {
-            background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            background-image: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px var(--shadow-color);
+        }
+
+        /* 深色模式下的表單元素 */
+        .dark-mode-input {
+            background-color: var(--bg-white);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .dark-mode-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        /* 深色模式下的結果顯示區 */
+        .dark-mode-results {
+            background-color: var(--bg-gray-50);
+            border: 1px solid var(--border-color);
+        }
+
+        /* 深色模式下的列車卡片 */
+        .dark-mode-card {
+            background-color: var(--bg-white);
+            border: 1px solid var(--border-color);
         }
 
         /* 自定義下拉選單箭頭 */
@@ -48,11 +108,17 @@
             appearance: none;
         }
 
+        @media (prefers-color-scheme: dark) {
+            .custom-select {
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d1d5db' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            }
+        }
+
         /* 讀取中動畫 */
         .loader {
             width: 48px;
             height: 48px;
-            border: 5px solid #FFF;
+            border: 5px solid var(--border-color);
             border-bottom-color: #3b82f6;
             border-radius: 50%;
             display: inline-block;
@@ -67,6 +133,20 @@
             100% {
                 transform: rotate(360deg);
             }
+        }
+
+        /* 按鈕樣式優化 */
+        .update-button {
+            color: var(--text-secondary);
+        }
+
+        .update-button:hover {
+            color: #3b82f6;
+        }
+
+        .update-button:disabled {
+            opacity: 0.5;
+            cursor: wait;
         }
     </style>
     <!-- 結構化資料 (Structured Data) -->
@@ -87,17 +167,17 @@
     }
     </script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
 
     <!-- 主容器 -->
     <div class="w-full max-w-lg mx-auto">
         <!-- 標題 -->
         <div class="flex items-center justify-center gap-3 mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">高雄捷運查詢</h1>
+            <h1 class="text-3xl font-bold" style="color: var(--text-primary);">高雄捷運查詢</h1>
         </div>
 
         <!-- 卡片式主體 -->
-        <div class="card-gradient p-6 sm:p-8 rounded-2xl shadow-lg w-full">
+        <div class="card-gradient p-6 sm:p-8 rounded-2xl w-full">
             
             <!-- 路線選擇按鈕 -->
             <div class="flex justify-center gap-4 mb-6">
@@ -111,9 +191,9 @@
 
             <!-- 站點選擇 -->
             <div class="mb-6">
-                <label for="station-select" class="block text-gray-600 text-sm font-medium mb-2">選擇車站</label>
+                <label for="station-select" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">選擇車站</label>
                 <div class="relative">
-                    <select id="station-select" class="custom-select block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white transition duration-200">
+                    <select id="station-select" class="custom-select dark-mode-input block w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                         <!-- 車站選項將由 JavaScript 動態填充 -->
                     </select>
                 </div>
@@ -122,23 +202,23 @@
             <!-- 查詢結果顯示區 -->
             <div class="mt-4">
                 <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-lg font-semibold text-gray-700">列車動態</h2>
+                    <h2 class="text-lg font-semibold" style="color: var(--text-secondary);">列車動態</h2>
                     <!-- 更新按鈕與倒數計時 -->
-                    <button id="manual-update-button" class="flex items-center gap-2 text-sm text-blue-600 font-medium hover:text-blue-800 transition-colors disabled:opacity-50 disabled:cursor-wait">
+                    <button id="manual-update-button" class="update-button flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-wait">
                         <svg id="update-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
                         <span id="countdown-text"></span>
                     </button>
                 </div>
                 
                 <!-- 結果容器 -->
-                <div id="results-display" class="bg-gray-50 p-4 rounded-lg min-h-[240px] max-h-96 overflow-y-auto relative shadow-inner">
+                <div id="results-display" class="dark-mode-results p-4 rounded-lg min-h-[240px] max-h-96 overflow-y-auto relative shadow-inner">
                     <!-- 初始提示或讀取動畫會顯示在這裡 -->
                 </div>
             </div>
         </div>
         
         <!-- 頁腳資訊 -->
-        <p class="text-center text-gray-500 text-xs mt-6">
+        <p class="text-center text-xs mt-6" style="color: var(--text-muted);">
             <span id="last-updated-time"></span>
         </p>
     </div>
@@ -210,7 +290,7 @@
             // 顯示讀取中狀態
             const showLoading = () => {
                 resultsDisplay.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                    <div class="flex flex-col items-center justify-center h-full" style="color: var(--text-muted);">
                         <div class="loader mb-4"></div>
                         <p>資料載入中，請稍候...</p>
                     </div>
@@ -220,9 +300,9 @@
             // 顯示提示訊息 (例如無資料或錯誤)
             const showMessage = (icon, title, text) => {
                 resultsDisplay.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                    <div class="flex flex-col items-center justify-center h-full text-center" style="color: var(--text-muted);">
                         <div class="w-16 h-16 mb-4">${icon}</div>
-                        <p class="font-semibold text-gray-700">${title}</p>
+                        <p class="font-semibold" style="color: var(--text-secondary);">${title}</p>
                         <p class="text-sm">${text}</p>
                     </div>
                 `;
@@ -266,17 +346,17 @@
                 
                 const card = document.createElement('div');
                 card.dataset.trainId = key; // **核心：設定唯一識別碼**
-                card.className = 'bg-white p-4 rounded-lg shadow-sm mb-3 flex items-center gap-4 transition-all transform hover:scale-[1.02]';
+                card.className = 'dark-mode-card p-4 rounded-lg shadow-sm mb-3 flex items-center gap-4 transition-all transform hover:scale-[1.02]';
                 card.innerHTML = `
                     <div class="flex-shrink-0 w-2 h-16 rounded-full ${lineClass}"></div>
                     <div class="flex-grow">
                         <div class="flex justify-between items-baseline">
-                            <p class="text-sm text-gray-500">開往</p>
+                            <p class="text-sm" style="color: var(--text-muted);">開往</p>
                             <!-- **核心：給時間元素一個 class 以便選取** -->
                             <p class="train-time"></p>
                         </div>
-                        <p class="text-xl font-semibold text-gray-800">${toName}</p>
-                        <p class="text-xs text-gray-400">${toStationCode}</p>
+                        <p class="text-xl font-semibold" style="color: var(--text-primary);">${toName}</p>
+                        <p class="text-xs" style="color: var(--text-muted);">${toStationCode}</p>
                     </div>
                 `;
 
@@ -347,7 +427,6 @@
                     }
                 });
             };
-
 
             // 更新倒數計時器
             const updateCountdownDisplay = () => {
